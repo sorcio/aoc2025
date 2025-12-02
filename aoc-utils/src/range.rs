@@ -34,7 +34,7 @@ impl<T: Copy> Interval<T> {
         Interval { start, length }
     }
 
-    pub fn len(&self) -> T {
+    pub const fn len(&self) -> T {
         self.length
     }
 }
@@ -45,6 +45,9 @@ impl<T: Copy> HasExtent for Interval<T> {
         self.length
     }
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct TryFromRangeError;
 
 macro_rules! interval_impl {
     ($t:ty) => {
@@ -112,6 +115,19 @@ macro_rules! interval_impl {
                     start: value.start,
                     length: value.end - value.start,
                 }
+            }
+        }
+
+        impl TryFrom<std::ops::RangeInclusive<$t>> for Interval<$t> {
+            type Error = TryFromRangeError;
+
+            fn try_from(value: std::ops::RangeInclusive<$t>) -> Result<Self, Self::Error> {
+                Ok(Self {
+                    start: *value.start(),
+                    length: (*value.end() - *value.start())
+                        .checked_add(1)
+                        .ok_or(TryFromRangeError)?,
+                })
             }
         }
     };
