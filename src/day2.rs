@@ -15,7 +15,7 @@ fn parse(input: &str) -> Vec<RangeInclusive<u64>> {
     input
         .trim_ascii_end()
         .split(',')
-        .map(|s| parse_interval(s))
+        .map(parse_interval)
         .collect()
 }
 
