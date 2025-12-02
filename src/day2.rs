@@ -1,7 +1,7 @@
 use std::ops::RangeInclusive;
 
 use aoc_runner_derive::{aoc, aoc_generator};
-use aoc_utils::{NumberExt, Parity, example_tests, known_input_tests};
+use aoc_utils::{MaxDigits, NumberDigitsExt, NumberExt, Parity, example_tests, known_input_tests};
 
 fn parse_interval(s: &str) -> RangeInclusive<u64> {
     let (start, end) = s.split_once('-').unwrap();
@@ -22,10 +22,11 @@ fn parse(input: &str) -> Vec<RangeInclusive<u64>> {
 #[aoc(day2, part1)]
 fn part1(input: &[RangeInclusive<u64>]) -> u64 {
     let mut total = 0;
+    let mut buf = MaxDigits::<u64>::array();
     for range in input.iter().cloned() {
         for n in range {
-            let decimal = format!("{n}");
-            let len = decimal.len();
+            let len = n.digits_in(&mut buf).unwrap();
+            let decimal = &buf[..len];
             if len.parity() == Parity::Even {
                 let (half1, half2) = decimal.split_at(len / 2);
                 if half1 == half2 {
@@ -40,10 +41,11 @@ fn part1(input: &[RangeInclusive<u64>]) -> u64 {
 #[aoc(day2, part2)]
 fn part2(input: &[RangeInclusive<u64>]) -> u64 {
     let mut total = 0;
+    let mut buf = MaxDigits::<u64>::array();
     for range in input.iter().cloned() {
         for n in range {
-            let decimal = format!("{n}");
-            let len = decimal.len();
+            let len = n.digits_in(&mut buf).unwrap();
+            let decimal = &buf[..len];
             for sublen in 1..=(len / 2) {
                 if len % sublen != 0 {
                     continue;

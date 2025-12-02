@@ -332,6 +332,76 @@ pub trait NumberIteratorExt: Sized {
 
 impl<T> NumberIteratorExt for T where T: Iterator {}
 
+pub trait NumberDigitsExt: Copy {
+    type MaxDigits;
+    /// Write the decimal digits of the number into the provided slice, starting
+    /// from the least significant digit.
+    fn digits_in(self, slice: &mut [u8]) -> Result<usize, BufferTooSmall>;
+    /// Returns the decimal digits of the number as a vector, starting from the
+    /// least significant digit.
+    fn digits(self) -> Vec<u8>;
+}
+
+pub struct MaxDigits<T>(std::marker::PhantomData<T>);
+
+#[derive(Clone, PartialEq, Eq, Hash)]
+pub struct BufferTooSmall;
+
+impl core::fmt::Debug for BufferTooSmall {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "digit count exceeds the size of the buffer")
+    }
+}
+
+macro_rules! impl_number_digits_ext_for_num_type {
+    ($($x:ty),+) => {
+        $(
+            impl MaxDigits<$x> {
+                /// The maximum number of decimal digits that can be represented by this type.
+                pub const COUNT: usize = const { (<$x>::MAX).ilog10() as usize + 1 };
+                /// Returns an array of zeros with the maximum number of decimal
+                /// digits that can be represented by this type.
+                pub const fn array() -> [u8; Self::COUNT] {
+                    [0u8; Self::COUNT]
+                }
+            }
+
+            impl NumberDigitsExt for $x {
+                type MaxDigits = MaxDigits<Self>;
+
+                fn digits_in(self, slice: &mut [u8]) -> Result<usize, BufferTooSmall> {
+                    let mut num = self;
+                    let mut index = 0;
+                    if num == 0 {
+                        slice[index] = 0;
+                        index += 1;
+                    }
+                    while num > 0 {
+                        if index == slice.len() {
+                            debug_assert!(index < Self::MaxDigits::COUNT);
+                            return Err(BufferTooSmall);
+                        }
+                        slice[index] = (num % 10) as u8;
+                        num /= 10;
+                        index += 1;
+                    }
+                    Ok(index)
+                }
+
+                fn digits(self) -> Vec<u8> {
+                    let mut digits = Self::MaxDigits::array().to_vec();
+                    let size = self.digits_in(&mut digits).unwrap();
+                    digits.truncate(size);
+                    digits
+                }
+            }
+        )+
+    };
+}
+
+// implemented only for signed types, because I don't want to deal with the minus sign
+impl_number_digits_ext_for_num_type!(u8, u16, u32, u64, usize);
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -430,5 +500,55 @@ mod tests {
         assert_eq!(grid.width, 3);
         assert_eq!(grid.height, 4);
         assert_eq!(grid.cells, b"abcdefghijkl".to_vec(),);
+    }
+
+    #[test]
+    fn max_digits() {
+        let x = u64::MAX;
+        let decimal = format!("{x}");
+        let digits = x.digits();
+        assert_eq!(digits.len(), decimal.len());
+        assert_eq!(digits.len(), <u64 as NumberDigitsExt>::MaxDigits::COUNT);
+    }
+
+    #[test]
+    fn digits() {
+        assert_eq!(0u16.digits(), vec![0]);
+        assert_eq!(1u16.digits(), vec![1]);
+        assert_eq!(10u16.digits(), vec![0, 1]);
+        assert_eq!(123u16.digits(), vec![3, 2, 1]);
+        assert_eq!(12345u16.digits(), vec![5, 4, 3, 2, 1]);
+        assert_eq!(u16::MAX.digits(), vec![5, 3, 5, 5, 6]);
+        assert_eq!(0u32.digits(), vec![0]);
+        assert_eq!(u32::MAX.digits(), [5, 9, 2, 7, 6, 9, 4, 9, 2, 4]);
+        assert_eq!(0u64.digits(), vec![0]);
+        assert_eq!(
+            u64::MAX.digits(),
+            [5, 1, 6, 1, 5, 5, 9, 0, 7, 3, 7, 0, 4, 4, 7, 6, 4, 4, 8, 1]
+        );
+    }
+
+    #[test]
+    fn digits_in() {
+        let mut buf = MaxDigits::<u64>::array();
+        let size = u64::MAX.digits_in(&mut buf).unwrap();
+        assert_eq!(size, buf.len());
+        assert_eq!(
+            buf,
+            [5, 1, 6, 1, 5, 5, 9, 0, 7, 3, 7, 0, 4, 4, 7, 6, 4, 4, 8, 1]
+        );
+        let size = 0u64.digits_in(&mut buf).unwrap();
+        assert_eq!(size, 1);
+        assert_eq!(
+            buf,
+            [0, 1, 6, 1, 5, 5, 9, 0, 7, 3, 7, 0, 4, 4, 7, 6, 4, 4, 8, 1]
+        );
+    }
+
+    #[test]
+    fn digits_in_small_buf() {
+        let mut buf = [0; 2];
+        let result = 100u64.digits_in(&mut buf);
+        assert_eq!(result, Err(BufferTooSmall));
     }
 }
