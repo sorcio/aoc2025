@@ -38,7 +38,7 @@ fn part1(input: &Banks) -> u64 {
         let second_byte = row[first + 1..].iter().max().unwrap();
         let first_value = first_byte - b'0';
         let second_value = second_byte - b'0';
-        total += (first_value * 10 + second_value) as u64;
+        total += u64::from(first_value * 10 + second_value);
     }
     total
 }
@@ -62,7 +62,7 @@ fn part2(input: &Banks) -> u64 {
         let row_value = numbers
             .into_iter()
             .take(n)
-            .fold(0, |acc, x| acc * 10 + (x - b'0') as u64);
+            .fold(0, |acc, x| acc * 10 + u64::from(x - b'0'));
         total += row_value;
     }
     total

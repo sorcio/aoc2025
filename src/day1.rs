@@ -50,7 +50,7 @@ impl Dial {
         }
     }
 
-    const fn value(&self) -> u16 {
+    const fn value(self) -> u16 {
         self.0
     }
 }
@@ -100,7 +100,7 @@ mod tests {
 fn parse(input: &str) -> Vec<Rotation> {
     input
         .lines()
-        .flat_map(|line| {
+        .filter_map(|line| {
             let (dir, rest) = line.split_at(1);
             match dir {
                 "L" => Some(Rotation::Left(rest.parse().unwrap())),
@@ -131,7 +131,7 @@ fn part2(input: &[Rotation]) -> u32 {
     for rotation in input {
         let zeroes;
         (dial, zeroes) = dial.rotate_counting_zeroes(*rotation);
-        zero_count += zeroes as u32;
+        zero_count += u32::from(zeroes);
     }
     zero_count
 }

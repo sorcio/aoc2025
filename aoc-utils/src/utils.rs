@@ -51,13 +51,14 @@ pub trait AsciiUtils<'a> {
     /// Iterate over the lines in a slice of ASCII bytes
     fn ascii_lines(&self) -> Self::Lines;
 
-    /// Returns a byte slice with trailing ASCII whitespace bytes removed.
+    /// Parses this byte slice into another type as an ASCII string.
     ///
-    /// The standard library has an equivalent method called `trim_ascii_end`,
-    /// but it's not stable yet as of Rust 1.74
-    /// ([rust-lang/rust#94035](https://github.com/rust-lang/rust/issues/94035)).
-    fn ascii_trim_end(self) -> Self;
-
+    /// This is equivalent to `str::parse` but for ASCII bytes.
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if it’s not possible to parse this byte slice into the
+    /// desired type.
     fn parse<'f, F>(self) -> Result<F, F::Error>
     where
         F: FromAscii<Slice<'f> = Self>,
@@ -68,17 +69,18 @@ pub trait AsciiUtils<'a> {
 
     /// Interpret the slice as a grid of cells that can be converted from ASCII
     /// characters, where each line is the same length.
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if it’s not possible to parse every byte into the
+    /// desired cell type.
     fn grid_like<Cell: TryFrom<u8>>(&self) -> Result<GridLike<Cell>, Cell::Error> {
         // TODO: probably not optimized
         let cells = self
             .ascii_lines()
             .flat_map(|line| line.iter().map(|&c| c.try_into()))
             .collect::<Result<Vec<Cell>, Cell::Error>>()?;
-        let width = self
-            .ascii_lines()
-            .next()
-            .map(|line| line.len())
-            .unwrap_or(0);
+        let width = self.ascii_lines().next().map_or(0, <[u8]>::len);
         let height = self.ascii_lines().count();
         Ok(GridLike {
             cells,
@@ -92,20 +94,6 @@ impl<'a> AsciiUtils<'a> for &'a [u8] {
     type Lines = LinesIterator<'a>;
     fn ascii_lines(&self) -> LinesIterator<'a> {
         LinesIterator::new(self)
-    }
-
-    fn ascii_trim_end(self) -> &'a [u8] {
-        // Note: implementation is ripped from Rust standard library, but
-        // without the const marker because it's not allowed for trait methods.
-        let mut bytes = self;
-        while let [rest @ .., last] = bytes {
-            if last.is_ascii_whitespace() {
-                bytes = rest;
-            } else {
-                break;
-            }
-        }
-        bytes
     }
 }
 
@@ -142,10 +130,19 @@ impl<'a> Iterator for LinesIterator<'a> {
     }
 }
 
-/// Similar to FromStr, but for ASCII bytes
+/// Similar to `FromStr`, but for ASCII bytes
 pub trait FromAscii: Sized {
     type Slice<'a>;
     type Error;
+
+    /// Parses this byte slice into another type as an ASCII string.
+    ///
+    /// This is equivalent to `FromStr::from_str` but for ASCII bytes.
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if it’s not possible to parse this byte slice into the
+    /// desired type.
     fn from_ascii(s: Self::Slice<'_>) -> Result<Self, Self::Error>;
 }
 
@@ -167,9 +164,9 @@ impl_for_ascii_for_number_type!(u8, i8, u16, i16, u32, i32, u64, i64);
 
 /// A grid of cells that can be converted from ASCII characters.
 ///
-/// This is a helper struct for implementing [FromGridLike] for a type. It does
+/// This is a helper struct for implementing [`FromGridLike`] for a type. It does
 /// not directly implement any grid utility methods, because they might be
-/// problem-specific and are left to the implementer of [FromGridLike].
+/// problem-specific and are left to the implementer of [`FromGridLike`].
 pub struct GridLike<Cell> {
     pub cells: Vec<Cell>,
     pub width: usize,
@@ -177,6 +174,7 @@ pub struct GridLike<Cell> {
 }
 
 impl<Cell> GridLike<Cell> {
+    #[must_use]
     pub fn into_grid<G>(self) -> G
     where
         G: FromGridLike<Cell = Cell>,
@@ -260,12 +258,18 @@ impl std::ops::Not for Parity {
 }
 
 pub trait NumberExt: Sized {
+    #[must_use]
     fn greatest_common_divisor(self, other: Self) -> Self;
+    #[must_use]
     fn least_common_multiple(self, other: Self) -> Self;
+    #[must_use]
     fn parity(self) -> Parity;
+    #[must_use]
     fn split_odd_even(self) -> (Self, Self);
 
+    #[must_use]
     fn zero() -> Self;
+    #[must_use]
     fn one() -> Self;
 }
 
@@ -336,6 +340,11 @@ pub trait NumberDigitsExt: Copy {
     type MaxDigits;
     /// Write the decimal digits of the number into the provided slice, starting
     /// from the least significant digit.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err(BufferTooSmall)` if the number of digits exceeds the size
+    /// of the buffer.
     fn digits_in(self, slice: &mut [u8]) -> Result<usize, BufferTooSmall>;
     /// Returns the decimal digits of the number as a vector, starting from the
     /// least significant digit.
@@ -381,7 +390,10 @@ macro_rules! impl_number_digits_ext_for_num_type {
                             debug_assert!(index < Self::MaxDigits::COUNT);
                             return Err(BufferTooSmall);
                         }
-                        slice[index] = (num % 10) as u8;
+                        #[allow(clippy::cast_possible_truncation)]
+                        {
+                            slice[index] = (num % 10) as u8;
+                        }
                         num /= 10;
                         index += 1;
                     }

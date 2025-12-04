@@ -49,7 +49,7 @@ impl<'s, T: Unindentable + ?Sized + 's> ParserOrNone<'s, T> for Option<()> {
     type Parsed = &'s T;
     fn parse(self, input: &'s T) -> Self::Parsed {
         match self {
-            Some(_) => panic!("parser should be a function or None"),
+            Some(()) => panic!("parser should be a function or None"),
             None => input,
         }
     }
@@ -67,6 +67,7 @@ where
     O: std::fmt::Debug + 'static,
 {
     #[cfg_attr(not(test), allow(unused))]
+    #[allow(clippy::missing_panics_doc)]
     pub fn test(self) {
         assert_eq!(
             &(self.solver)(self.parser.parse(self.example).borrow()),

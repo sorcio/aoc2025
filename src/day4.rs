@@ -50,7 +50,7 @@ struct Map {
 
 impl Map {
     fn cell(&self, pos: Position) -> Option<Cell> {
-        if !(pos.x >= self.width || pos.y >= self.height) {
+        if pos.x < self.width && pos.y < self.height {
             self.cells.get(pos.y * self.width + pos.x).copied()
         } else {
             None

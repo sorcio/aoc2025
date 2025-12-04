@@ -22,7 +22,7 @@ where
     }
 }
 
-/// Kinda like Range/RangeInclusive but the end might be > u32::MAX
+/// Kinda like Range/RangeInclusive but the end might be > `u32::MAX`
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Interval<T = u32> {
     start: T,
@@ -75,7 +75,7 @@ macro_rules! interval_impl {
             }
 
             pub fn end(&self) -> u64 {
-                self.start as u64 + self.length as u64
+                u64::from(self.start) + u64::from(self.length)
             }
 
             pub fn intersection(&self, other: &Self) -> Option<Self> {
@@ -100,8 +100,8 @@ macro_rules! interval_impl {
         impl Overlaps for Interval<$t> {
             fn overlaps(&self, other: &Self) -> bool {
                 // I'm too lazy to think how to simplify this so let's just use u64 everywhere
-                let a_start = self.start as u64;
-                let b_start = other.start as u64;
+                let a_start = u64::from(self.start);
+                let b_start = u64::from(other.start);
                 let a_end = self.end();
                 let b_end = other.end();
                 // self.start < other.end && other.start < self.end && !self.is_empty() && !other.is_empty()
