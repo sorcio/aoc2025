@@ -19,8 +19,8 @@ fn parse(input: &str) -> Input {
         }
         let (start, end) = line.split_once('-').unwrap();
         let start = start.parse().unwrap();
-        let end = end.parse::<u64>().unwrap().checked_add(1).unwrap();
-        intervals.push((start..end).into());
+        let end = end.parse().unwrap();
+        intervals.push((start..=end).try_into().unwrap());
     }
 
     for line in lines {
