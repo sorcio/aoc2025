@@ -24,7 +24,7 @@ where
 
 /// Kinda like Range/RangeInclusive but the end might be > `u32::MAX`
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Interval<T = u32> {
+pub struct Interval<T> {
     start: T,
     length: T,
 }
@@ -49,6 +49,12 @@ impl<T: Copy> HasExtent for Interval<T> {
 #[derive(Debug, Clone, Copy)]
 pub struct TryFromRangeError;
 
+impl<T: Copy> Interval<T> {
+    pub fn start(&self) -> T {
+        self.start
+    }
+}
+
 macro_rules! interval_impl {
     ($t:ty) => {
         #[allow(dead_code)]
@@ -68,10 +74,6 @@ macro_rules! interval_impl {
 
             pub fn distance_from_start(&self, n: $t) -> Option<$t> {
                 self.contains(n).then(|| n.checked_sub(self.start))?
-            }
-
-            pub fn start(&self) -> $t {
-                self.start
             }
 
             pub fn end(&self) -> u64 {

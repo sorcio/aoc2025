@@ -42,12 +42,12 @@ fn part1(input: &Input) -> usize {
 #[aoc(day5, part2)]
 fn part2(input: &Input) -> u64 {
     let mut intervals = input.intervals.clone();
-    intervals.sort_unstable_by_key(|interval| interval.start());
+    intervals.sort_unstable_by_key(Interval::start);
     sum_intervals_overlapping(&intervals)
 }
 
 fn sum_intervals_overlapping(intervals: &[Interval<u64>]) -> u64 {
-    debug_assert!(intervals.is_sorted_by_key(|i| i.start()));
+    debug_assert!(intervals.is_sorted_by_key(Interval::start));
     let mut result = 0;
     let mut last_end = 0;
     for interval in intervals {
