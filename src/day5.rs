@@ -1,11 +1,9 @@
-use std::ops::RangeInclusive;
-
 use aoc_runner_derive::{aoc, aoc_generator};
-use aoc_utils::{example_tests, known_input_tests};
+use aoc_utils::{Interval, example_tests, known_input_tests};
 
 #[derive(Debug, Clone)]
 struct Input {
-    intervals: Vec<RangeInclusive<u64>>,
+    intervals: Vec<Interval<u64>>,
     ids: Vec<u64>,
 }
 
@@ -15,17 +13,17 @@ fn parse(input: &str) -> Input {
     let mut intervals = Vec::new();
     let mut ids = Vec::new();
 
-    while let Some(line) = lines.next() {
+    for line in &mut lines {
         if line.is_empty() {
             break;
         }
         let (start, end) = line.split_once('-').unwrap();
-        let start: u64 = start.parse().unwrap();
-        let end: u64 = end.parse().unwrap();
-        intervals.push(start..=end);
+        let start = start.parse().unwrap();
+        let end = end.parse::<u64>().unwrap().checked_add(1).unwrap();
+        intervals.push((start..end).into());
     }
 
-    while let Some(line) = lines.next() {
+    for line in lines {
         ids.push(line.parse().unwrap());
     }
 
@@ -37,34 +35,29 @@ fn part1(input: &Input) -> usize {
     input
         .ids
         .iter()
-        .filter(|&&id| {
-            input
-                .intervals
-                .iter()
-                .any(|interval| interval.contains(&id))
-        })
+        .filter(|&&id| input.intervals.iter().any(|interval| interval.contains(id)))
         .count()
 }
 
 #[aoc(day5, part2)]
 fn part2(input: &Input) -> u64 {
     let mut intervals = input.intervals.clone();
-    intervals.sort_unstable_by_key(|interval| *interval.start());
+    intervals.sort_unstable_by_key(|interval| interval.start());
     sum_intervals_overlapping(&intervals)
 }
 
-fn sum_intervals_overlapping(intervals: &[RangeInclusive<u64>]) -> u64 {
-    debug_assert!(intervals.is_sorted_by_key(|i| *i.start()));
+fn sum_intervals_overlapping(intervals: &[Interval<u64>]) -> u64 {
+    debug_assert!(intervals.is_sorted_by_key(|i| i.start()));
     let mut result = 0;
     let mut last_end = 0;
     for interval in intervals {
-        let non_overlapping_part = if *interval.start() < last_end + 1 {
-            (*interval.end() + 1).saturating_sub(last_end)
+        let non_overlapping_part = if interval.start() <= last_end {
+            (interval.end()).saturating_sub(last_end)
         } else {
-            (*interval.end() + 1) - *interval.start()
+            (interval.end()) - interval.start()
         };
         result += non_overlapping_part;
-        last_end = last_end.max(*interval.end() + 1);
+        last_end = last_end.max(interval.end());
     }
     result
 }
@@ -75,15 +68,15 @@ mod tests {
 
     #[test]
     fn test_sum_intervals_non_overlapping() {
-        let intervals = vec![1..=3, 4..=7, 9..=11];
+        let intervals = [1..4, 4..8, 9..12].map(Into::into);
         assert_eq!(sum_intervals_overlapping(&intervals), 3 + 4 + 3);
     }
 
     #[test]
     fn test_sum_intervals_overlapping() {
-        let intervals = vec![1..=10, 5..=15];
+        let intervals = [1..11, 5..16].map(Into::into);
         assert_eq!(sum_intervals_overlapping(&intervals), 10 + 5);
-        let intervals = vec![1..=10, 5..=15, 21..=30];
+        let intervals = [1..11, 5..16, 21..31].map(Into::into);
         assert_eq!(sum_intervals_overlapping(&intervals), 10 + 5 + 10);
     }
 }
