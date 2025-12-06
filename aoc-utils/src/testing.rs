@@ -78,10 +78,15 @@ where
 
 #[macro_export]
 macro_rules! example_tests {
+    // Note: the syntax has changed a little bit since previous versions, in
+    // order to enable specifying a per-part parser in a kinda ergonomic way. In
+    // particular, the parser is always specified before the per-part example
+    // data, but *after* the global example data. Make sure to check the order
+    // of the parameters.
     (
-        parser: $parser:expr,
         $example_data:expr,
         $(
+            parser: $per_part_parser:expr,
             $($per_part_example_data:literal,)?
             $solver_name:ident => $result:expr
         ),+
@@ -94,6 +99,7 @@ macro_rules! example_tests {
                 fn $solver_name() {
                     use std::borrow::Borrow;
                     use $crate::testing::{CorrectResultTest, Unindentable};
+                    let parser = $per_part_parser;
                     #[allow(unused_variables)]
                     let example_data = $example_data.unindent();
                     $(
@@ -101,7 +107,7 @@ macro_rules! example_tests {
                     )?
                     {
                     CorrectResultTest {
-                        parser: $parser,
+                        parser,
                         solver: super::$solver_name,
                         example: example_data.borrow(),
                         result: &$result,
@@ -114,9 +120,11 @@ macro_rules! example_tests {
     };
     ($example_data:expr, $($solver_name:ident => $result:expr),+ $(,)?) => {
         example_tests! {
-            parser: super::parse,
             $example_data,
-            $($solver_name => $result),*
+            $(
+                parser: super::parse,
+                $solver_name => $result
+            ),*
         }
     };
 }
@@ -124,9 +132,9 @@ macro_rules! example_tests {
 #[macro_export]
 macro_rules! known_input_tests {
     (
-        parser: $parser:expr,
         input: $input:expr,
         $(
+            parser: $per_part_parser:expr,
             $solver_name:ident => $result:expr
         ),+
         $(,)?
@@ -138,10 +146,12 @@ macro_rules! known_input_tests {
                 fn $solver_name() {
                     use std::borrow::Borrow;
                     use $crate::testing::{CorrectResultTest, Unindentable};
+                    #[allow(unused_variables)]
+                    let parser = $per_part_parser;
                     let example_data = $input.unindent();
                     {
                     CorrectResultTest {
-                        parser: $parser,
+                        parser,
                         solver: super::$solver_name,
                         example: example_data.borrow(),
                         result: &$result,
@@ -154,9 +164,11 @@ macro_rules! known_input_tests {
     };
     (input: $input:expr, $($solver_name:ident => $result:expr),+ $(,)?) => {
         known_input_tests! {
-            parser: super::parse,
             input: $input,
-            $($solver_name => $result),*
+            $(
+                parser: super::parse,
+                $solver_name => $result
+            ),*
         }
     };
 }
