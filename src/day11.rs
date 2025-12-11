@@ -18,6 +18,13 @@ impl Label {
         label.copy_from_slice(input);
         Self(label)
     }
+
+    fn as_index(self) -> usize {
+        debug_assert!(self.0.iter().all(|&c| c.is_ascii_lowercase()));
+        (self.0[0] - b'a') as usize
+            + ((self.0[1] - b'a') as usize) * 26
+            + ((self.0[2] - b'a') as usize) * 26 * 26
+    }
 }
 
 impl std::fmt::Debug for Label {
@@ -52,27 +59,28 @@ fn count_paths_between(edges: &HashMap<Label, Box<[Label]>>, start: Label, end: 
         edges: &HashMap<Label, Box<[Label]>>,
         start: Label,
         end: Label,
-        counts: &mut HashMap<Label, u64>,
+        counts: &mut [u64; 26 * 26 * 26],
     ) -> u64 {
-        if let Some(&count) = counts.get(&start) {
-            return count;
-        }
+        debug_assert_eq!(counts[start.as_index()], u64::MAX);
         let mut count = 0;
         if let Some(children) = edges.get(&start) {
             for child in children {
                 if *child == end {
                     count += 1;
+                } else if counts[child.as_index()] != u64::MAX {
+                    count += counts[child.as_index()];
                 } else {
                     count += recurse(edges, *child, end, counts);
                 }
             }
         }
-        *counts.entry(start).or_insert(0) += count;
+        *(counts.get_mut(start.as_index()).unwrap()) = count;
         count
     }
 
-    let mut counts = HashMap::new();
-    recurse(edges, start, end, &mut counts)
+    #[allow(clippy::large_stack_arrays)]
+    let mut counts = [u64::MAX; 26 * 26 * 26];
+    recurse(edges, start, end, &mut counts) as _
 }
 
 #[aoc(day11, part1)]
