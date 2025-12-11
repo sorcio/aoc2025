@@ -72,7 +72,6 @@ fn count_paths_between(edges: &HashMap<Label, Box<[Label]>>, start: Label, end: 
     }
 
     let mut counts = HashMap::new();
-    counts.insert(end, 1);
     recurse(edges, start, end, &mut counts)
 }
 
