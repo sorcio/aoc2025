@@ -47,45 +47,33 @@ fn parse(input: &[u8]) -> Vec<Node> {
         .collect()
 }
 
-fn topo_sort_visit(node: Label, topo: &mut Vec<Label>, edges: &HashMap<Label, Box<[Label]>>) {
-    if topo.contains(&node) {
-        return;
-    }
-    if let Some(children) = edges.get(&node) {
-        for child in children {
-            topo_sort_visit(*child, topo, edges);
-        }
-    }
-    topo.push(node);
-}
-
 fn count_paths_between(edges: &HashMap<Label, Box<[Label]>>, start: Label, end: Label) -> u64 {
-    // TODO: maybe don't do this each time
-    let mut predecessors = HashMap::new();
-    for node in edges.keys() {
-        for child in &edges[node] {
-            predecessors.entry(*child).or_insert(Vec::new()).push(*node);
+    fn recurse(
+        edges: &HashMap<Label, Box<[Label]>>,
+        start: Label,
+        end: Label,
+        counts: &mut HashMap<Label, u64>,
+    ) -> u64 {
+        if let Some(&count) = counts.get(&start) {
+            return count;
         }
+        let mut count = 0;
+        if let Some(children) = edges.get(&start) {
+            for child in children {
+                if *child == end {
+                    count += 1;
+                } else {
+                    count += recurse(edges, *child, end, counts);
+                }
+            }
+        }
+        *counts.entry(start).or_insert(0) += count;
+        count
     }
-
-    let mut topo = vec![];
-    topo_sort_visit(start, &mut topo, edges);
 
     let mut counts = HashMap::new();
     counts.insert(end, 1);
-    for node in &topo {
-        if node == &start {
-            break;
-        }
-        if let Some(&count) = counts.get(node)
-            && count > 0
-        {
-            for predecessor in predecessors.get(node).unwrap_or(&Vec::new()) {
-                *counts.entry(*predecessor).or_insert(0) += count;
-            }
-        }
-    }
-    *counts.get(&start).unwrap_or(&0)
+    recurse(edges, start, end, &mut counts)
 }
 
 #[aoc(day11, part1)]
