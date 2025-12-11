@@ -3,36 +3,6 @@ use std::collections::HashMap;
 use aoc_runner_derive::{aoc, aoc_generator};
 use aoc_utils::{AsciiUtils, example_tests, known_input_tests};
 
-// #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-// struct Label([u8; 3]);
-
-// impl Label {
-//     const YOU: Label = Label([b'y', b'o', b'u']);
-//     const OUT: Label = Label([b'o', b'u', b't']);
-//     const SVR: Label = Label([b's', b'v', b'r']);
-//     const DAC: Label = Label([b'd', b'a', b'c']);
-//     const FFT: Label = Label([b'f', b'f', b't']);
-
-//     const fn new(input: &[u8]) -> Self {
-//         let mut label = [0; 3];
-//         label.copy_from_slice(input);
-//         Self(label)
-//     }
-
-//     fn as_index(self) -> usize {
-//         debug_assert!(self.0.iter().all(|&c| c.is_ascii_lowercase()));
-//         (self.0[0] - b'a') as usize
-//             + ((self.0[1] - b'a') as usize) * 26
-//             + ((self.0[2] - b'a') as usize) * 26 * 26
-//     }
-// }
-
-// impl std::fmt::Debug for Label {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         write!(f, "{}", std::str::from_utf8(&self.0).unwrap())
-//     }
-// }
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Label(u16);
 
@@ -61,8 +31,8 @@ fn parse(input: &[u8]) -> Vec<Node> {
     labels.insert([b'y', b'o', b'u'], Label::YOU);
     labels.insert([b'o', b'u', b't'], Label::OUT);
     labels.insert([b's', b'v', b'r'], Label::SVR);
-    labels.insert([b'f', b'f', b't'], Label::FFT);
     labels.insert([b'd', b'a', b'c'], Label::DAC);
+    labels.insert([b'f', b'f', b't'], Label::FFT);
     let mut new_label = |label: &[u8]| {
         let key = [label[0], label[1], label[2]];
         let suggested_label = labels.len();
@@ -90,15 +60,15 @@ fn count_paths_between(edges: &HashMap<Label, Box<[Label]>>, start: Label, end: 
         edges: &HashMap<Label, Box<[Label]>>,
         start: Label,
         end: Label,
-        counts: &mut [u64; MAX_LABELS],
-    ) -> u64 {
-        debug_assert_eq!(counts[start.as_index()], u64::MAX);
+        counts: &mut [u32; MAX_LABELS],
+    ) -> u32 {
+        debug_assert_eq!(counts[start.as_index()], u32::MAX);
         let mut count = 0;
         if let Some(children) = edges.get(&start) {
             for child in children {
                 if *child == end {
                     count += 1;
-                } else if counts[child.as_index()] != u64::MAX {
+                } else if counts[child.as_index()] != u32::MAX {
                     count += counts[child.as_index()];
                 } else {
                     count += recurse(edges, *child, end, counts);
@@ -109,9 +79,8 @@ fn count_paths_between(edges: &HashMap<Label, Box<[Label]>>, start: Label, end: 
         count
     }
 
-    #[allow(clippy::large_stack_arrays)]
-    let mut counts = [u64::MAX; MAX_LABELS];
-    recurse(edges, start, end, &mut counts) as _
+    let mut counts = [u32::MAX; MAX_LABELS];
+    recurse(edges, start, end, &mut counts).into()
 }
 
 #[aoc(day11, part1)]
@@ -129,13 +98,18 @@ fn part2(input: &[Node]) -> u64 {
     for node in input {
         edges.insert(node.label, node.children.clone());
     }
-    let svr_to_dac = count_paths_between(&edges, Label::SVR, Label::DAC);
     let dac_to_fft = count_paths_between(&edges, Label::DAC, Label::FFT);
-    let svr_to_fft = count_paths_between(&edges, Label::SVR, Label::FFT);
-    let fft_to_dac = count_paths_between(&edges, Label::FFT, Label::DAC);
-    let dac_to_out = count_paths_between(&edges, Label::DAC, Label::OUT);
-    let fft_to_out = count_paths_between(&edges, Label::FFT, Label::OUT);
-    svr_to_dac * dac_to_fft * fft_to_out + svr_to_fft * fft_to_dac * dac_to_out
+    // since the graph is acyclic, only one direction is possible between DAC and FFT
+    if dac_to_fft == 0 {
+        let svr_to_fft = count_paths_between(&edges, Label::SVR, Label::FFT);
+        let dac_to_out = count_paths_between(&edges, Label::DAC, Label::OUT);
+        let fft_to_dac = count_paths_between(&edges, Label::FFT, Label::DAC);
+        svr_to_fft * fft_to_dac * dac_to_out
+    } else {
+        let svr_to_dac = count_paths_between(&edges, Label::SVR, Label::DAC);
+        let fft_to_out = count_paths_between(&edges, Label::FFT, Label::OUT);
+        svr_to_dac * dac_to_fft * fft_to_out
+    }
 }
 
 example_tests! {
