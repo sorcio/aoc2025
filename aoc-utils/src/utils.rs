@@ -564,3 +564,63 @@ mod tests {
         assert_eq!(result, Err(BufferTooSmall));
     }
 }
+
+#[derive(Debug)]
+pub struct Annotate<T, A> {
+    pub value: T,
+    pub annotation: A,
+}
+
+impl<T, A> PartialEq for Annotate<T, A>
+where
+    T: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.value.eq(&other.value)
+    }
+}
+impl<T, A> Eq for Annotate<T, A> where T: Eq {}
+
+impl<T, A> PartialOrd for Annotate<T, A>
+where
+    T: PartialOrd,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        self.value.partial_cmp(&other.value)
+    }
+}
+
+impl<T, A> Ord for Annotate<T, A>
+where
+    T: Ord,
+{
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        self.value.cmp(&other.value)
+    }
+}
+
+impl<T, A> Clone for Annotate<T, A>
+where
+    T: Clone,
+    A: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            value: self.value.clone(),
+            annotation: self.annotation.clone(),
+        }
+    }
+}
+
+pub trait AnnotateExt<T, A> {
+    fn annotate(self, annotation: A) -> Annotate<T, A>;
+}
+
+impl<T, A> AnnotateExt<T, A> for T {
+    fn annotate(self, annotation: A) -> Annotate<T, A> {
+        Annotate {
+            value: self,
+            annotation,
+        }
+    }
+}

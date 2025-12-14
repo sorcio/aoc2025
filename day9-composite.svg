@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1540" viewBox="0 0 13 12">
+<polygon points="7,1 11,1 11,7 9,7 9,5 2,5 2,3 7,3 " fill="blue" stroke="green" stroke-width="1" />
+<rect x="6.5" y="0.5" width="1" height="1" fill="#ffa0a070"/>
+<rect x="6.83333334" y="0.83333334" width="0.333333" height="0.333333" fill="purple"/>
+<rect x="10.5" y="0.5" width="1" height="1" fill="#ffa0a070"/>
+<rect x="10.83333334" y="0.83333334" width="0.333333" height="0.333333" fill="purple"/>
+<rect x="10.5" y="6.5" width="1" height="1" fill="#ffa0a070"/>
+<rect x="10.83333334" y="6.83333334" width="0.333333" height="0.333333" fill="purple"/>
+<rect x="8.5" y="6.5" width="1" height="1" fill="#ffa0a070"/>
+<rect x="8.83333334" y="6.83333334" width="0.333333" height="0.333333" fill="purple"/>
+<rect x="8.5" y="4.5" width="1" height="1" fill="#ffa0a070"/>
+<rect x="8.83333334" y="4.83333334" width="0.333333" height="0.333333" fill="purple"/>
+<rect x="1.5" y="4.5" width="1" height="1" fill="#ffa0a070"/>
+<rect x="1.83333334" y="4.83333334" width="0.333333" height="0.333333" fill="purple"/>
+<rect x="1.5" y="2.5" width="1" height="1" fill="#ffa0a070"/>
+<rect x="1.83333334" y="2.83333334" width="0.333333" height="0.333333" fill="purple"/>
+<rect x="6.5" y="2.5" width="1" height="1" fill="#ffa0a070"/>
+<rect x="6.83333334" y="2.83333334" width="0.333333" height="0.333333" fill="purple"/>
+<rect x="0" y="0" width="0" height="0" fill="#ff00007f"/>
+
+<g transform="translate(0, 8)">
+<polygon points="11.333333333333334,0.6666666666666666 11.333333333333334,7.333333333333333 8.666666666666666,7.333333333333333 8.666666666666666,5.333333333333333 1.6666666666666667,5.333333333333333 1.6666666666666667,2.6666666666666665 6.666666666666667,2.6666666666666665 6.666666666666667,0.6666666666666666 " fill="blue" stroke="green" stroke-width="0.333333333" />
+<rect x="6.5" y="0.5" width="1" height="1" fill="#ffa0a070"/>
+<rect x="6.83333334" y="0.83333334" width="0.333333" height="0.333333" fill="purple"/>
+<rect x="10.5" y="0.5" width="1" height="1" fill="#ffa0a070"/>
+<rect x="10.83333334" y="0.83333334" width="0.333333" height="0.333333" fill="purple"/>
+<rect x="10.5" y="6.5" width="1" height="1" fill="#ffa0a070"/>
+<rect x="10.83333334" y="6.83333334" width="0.333333" height="0.333333" fill="purple"/>
+<rect x="8.5" y="6.5" width="1" height="1" fill="#ffa0a070"/>
+<rect x="8.83333334" y="6.83333334" width="0.333333" height="0.333333" fill="purple"/>
+<rect x="8.5" y="4.5" width="1" height="1" fill="#ffa0a070"/>
+<rect x="8.83333334" y="4.83333334" width="0.333333" height="0.333333" fill="purple"/>
+<rect x="1.5" y="4.5" width="1" height="1" fill="#ffa0a070"/>
+<rect x="1.83333334" y="4.83333334" width="0.333333" height="0.333333" fill="purple"/>
+<rect x="1.5" y="2.5" width="1" height="1" fill="#ffa0a070"/>
+<rect x="1.83333334" y="2.83333334" width="0.333333" height="0.333333" fill="purple"/>
+<rect x="6.5" y="2.5" width="1" height="1" fill="#ffa0a070"/>
+<rect x="6.83333334" y="2.83333334" width="0.333333" height="0.333333" fill="purple"/>
+<rect x="0" y="0" width="0" height="0" fill="#ff00007f"/>
+</g>
+
+</svg>
