@@ -101,7 +101,6 @@ fn part2(input: &[Pos]) -> u64 {
     //
     //  or
     //
-    //
     //   . . . . . . . . .
     //   . o . . . . . o .
     //     *---------+ . .
@@ -153,7 +152,7 @@ fn part2(input: &[Pos]) -> u64 {
     }
 
     impl Heading {
-        fn clockwise(self) -> Self {
+        const fn clockwise(self) -> Self {
             match self {
                 Heading::Right => Heading::Down,
                 Heading::Down => Heading::Left,
@@ -161,13 +160,16 @@ fn part2(input: &[Pos]) -> u64 {
                 Heading::Up => Heading::Right,
             }
         }
-        fn counter_clockwise(self) -> Self {
+        const fn opposite(self) -> Self {
             match self {
-                Heading::Right => Heading::Up,
-                Heading::Down => Heading::Right,
-                Heading::Left => Heading::Down,
-                Heading::Up => Heading::Left,
+                Heading::Right => Heading::Left,
+                Heading::Down => Heading::Up,
+                Heading::Left => Heading::Right,
+                Heading::Up => Heading::Down,
             }
+        }
+        const fn counter_clockwise(self) -> Self {
+            self.clockwise().opposite()
         }
     }
 
@@ -186,11 +188,9 @@ fn part2(input: &[Pos]) -> u64 {
     };
     for i in 0..input.len() {
         let idx = (start_idx + i) % input.len();
-        // let prev_idx = idx.checked_sub_signed(direction).unwrap_or(input.len() - 1) % input.len();
         let next_idx = idx.checked_add_signed(direction).unwrap_or(input.len() - 1) % input.len();
 
         let point = input[idx];
-        // let prev_point = input[prev_idx];
         let next_point = input[next_idx];
 
         // Eight possibilities depending on the direction of the two
@@ -202,8 +202,8 @@ fn part2(input: &[Pos]) -> u64 {
         //       . o |     | o .     . o |     | o .
         //       . . |     | . .     ----+     +----
         //
-        //        u-l      *u-r      *d-l       d-r
-        //       *r-d       l-d       r-u      *l-u
+        //  CW    r-d       u-r       d-l       l-u
+        //  CCW   u-l       l-d       r-u       d-r
         //
         // Negative winding (center is outside the corner):
         //
@@ -213,11 +213,11 @@ fn part2(input: &[Pos]) -> u64 {
         //     --+ . .     . . +--   . . .     . . .
         //       |             |
         //
-        //       *u-l       u-r       d-l      *d-r
-        //        r-d      *l-d      *r-u       l-u
+        //  CW    u-l       l-d       r-u       d-r
+        //  CCW   r-d       u-r       d-l       l-u
         //
-        // These determine the location of the corner in the 3x3 sub-tile, if
-        // you keep in mind that when going CCW you just invert the direction.
+        // But ultimately we only need to care about the position of the corner
+        // in the 3x3 sub-tile, and there are only four possible positions.
         let next_heading = if point.x == next_point.x {
             // horizontal
             if point.y < next_point.y {
@@ -238,27 +238,24 @@ fn part2(input: &[Pos]) -> u64 {
             heading.counter_clockwise()
         };
         let is_positive = positive_heading == next_heading;
-        // this is redundant, it doesn't need three variables and eight
-        // combinations, but I wrote it at 2am and will fix it later:
+        // This thing is full of symmetries to exploit but I can think about
+        // it more explicitly if I just write down the whole table with all
+        // the cases.
+        use Heading::*;
         let (dx, dy) = match (is_positive, heading, next_heading) {
-            (true, Heading::Up, Heading::Left) | (true, Heading::Right, Heading::Down) => (1, -1),
-            (true, Heading::Up, Heading::Right) | (true, Heading::Left, Heading::Down) => (-1, -1),
-            (true, Heading::Down, Heading::Left) | (true, Heading::Right, Heading::Up) => (1, 1),
-            (true, Heading::Down, Heading::Right) | (true, Heading::Left, Heading::Up) => (-1, 1),
-            (false, Heading::Up, Heading::Left) | (false, Heading::Right, Heading::Down) => (-1, 1),
-            (false, Heading::Up, Heading::Right) | (false, Heading::Left, Heading::Down) => (1, 1),
-            (false, Heading::Down, Heading::Left) | (false, Heading::Right, Heading::Up) => {
-                (-1, -1)
-            }
-            (false, Heading::Down, Heading::Right) | (false, Heading::Left, Heading::Up) => (1, -1),
+            (true, Up, Left) | (true, Right, Down) => (2, 0),
+            (true, Up, Right) | (true, Left, Down) => (0, 0),
+            (true, Down, Left) | (true, Right, Up) => (2, 2),
+            (true, Down, Right) | (true, Left, Up) => (0, 2),
+            (false, Up, Left) | (false, Right, Down) => (0, 2),
+            (false, Up, Right) | (false, Left, Down) => (2, 2),
+            (false, Down, Left) | (false, Right, Up) => (0, 0),
+            (false, Down, Right) | (false, Left, Up) => (2, 0),
             _ => {
                 unreachable!("impossible: is_positive={is_positive} {heading:?}->{next_heading:?}")
             }
         };
-        let transformed_point = Pos::new(
-            (point.x * 3 + 1).strict_add_signed(dx),
-            (point.y * 3 + 1).strict_add_signed(dy),
-        );
+        let transformed_point = Pos::new(point.x * 3 + dx, point.y * 3 + dy);
         transformed_points.push(transformed_point);
         heading = next_heading;
     }
