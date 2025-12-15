@@ -214,6 +214,7 @@ fn part2_big(nodes: &[PackedPos]) -> u64 {
     part2::<SIZE, EDGES>(nodes)
 }
 
+#[cfg(test)]
 fn part2_small(nodes: &[PackedPos]) -> u64 {
     const SIZE: usize = 20;
     const EDGES: usize = SIZE * (SIZE - 1) / 2;
