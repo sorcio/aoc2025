@@ -1,7 +1,7 @@
-use std::{cmp::Reverse, collections::BinaryHeap};
+use std::cmp::Reverse;
 
 use aoc_runner_derive::{aoc, aoc_generator};
-use aoc_utils::{Annotate, AnnotateExt, SliceUtils, example_tests, known_input_tests};
+use aoc_utils::{SliceUtils, example_tests, known_input_tests};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct Pos {
@@ -51,13 +51,6 @@ fn part2(input: &[Pos]) -> u64 {
     // the grid into 3x3 sub-tiles is a trick that can be applied to other
     // puzzles (I did something similar for AOC 2023 day 10, apparently!)
 
-    let mut areas = BinaryHeap::with_capacity(input.len() * (input.len() - 1) / 2);
-    for i in 0..input.len() {
-        for j in i + 1..input.len() {
-            let area = area(input[i], input[j]);
-            areas.push(area.annotate((i, j)));
-        }
-    }
     // We apply a weird transformation to the coordinates that will make things
     // easier later when we need to find intersections between rectangle sides
     // and the segments that make up the bounding polygon. We can imagine it as
@@ -276,16 +269,30 @@ fn part2(input: &[Pos]) -> u64 {
             horizontal_segments.push((p1, p2));
         }
     }
+    // Longer segments are more likely to collide with the rectangle sides, and
+    // while that's true in general, it's disproportionately likely in the input
+    // data. So sorting by length could be considered cheating (i.e. tuning the
+    // algorithm to the input data) for speed. We could just not do it, and the
+    // problem would still be manageable. I leave the code here because it
+    // doesn't hurt even in the general case.
     horizontal_segments.sort_unstable_by_key(|(p1, p2)| Reverse(p1.x.abs_diff(p2.x)));
     vertical_segments.sort_unstable_by_key(|(p1, p2)| Reverse(p1.y.abs_diff(p2.y)));
 
-    'areas: while let Some(Annotate {
-        annotation: (i, j),
-        value: area,
-    }) = areas.pop()
-    {
-        let pos1 = input[i];
-        let pos2 = input[j];
+    // Previously I used to compute all the rectangle areas and put them in a
+    // priority queue, so that we could start by checking the largest ones
+    // first, but at the extra cost of the binary heap pop (an additional log(n)
+    // factor). In benchmarks, it turned out that even with a priority queue we
+    // still have to test a large number of rectangles, and the result was
+    // slower, so we might as well just go through them all and save the extra
+    // data structure and its cost.
+    let mut best_area = 0;
+    #[cfg(feature = "draw-visuals")]
+    let mut best_rect = (Pos::new(0, 0), Pos::new(0, 0));
+    'areas: for (&pos1, &pos2) in input.pairs() {
+        let area = area(pos1, pos2);
+        if area <= best_area {
+            continue;
+        }
         let x1 = pos1.x.min(pos2.x) * 3 + 1;
         let x2 = pos1.x.max(pos2.x) * 3 + 1;
         let y1 = pos1.y.min(pos2.y) * 3 + 1;
@@ -308,26 +315,29 @@ fn part2(input: &[Pos]) -> u64 {
                 continue 'areas;
             }
         }
-        if cfg!(feature = "draw-visuals") {
-            draw_svg(input, &transformed_points, (pos1, pos2));
+        #[cfg(feature = "draw-visuals")]
+        {
+            best_rect = (pos1, pos2);
         }
-        return area;
+
+        best_area = area;
     }
 
-    if cfg!(feature = "draw-visuals") {
-        draw_svg(input, &transformed_points, (Pos::new(0, 0), Pos::new(0, 0)));
+    #[cfg(feature = "draw-visuals")]
+    {
+        draw_svg(input, &transformed_points, (best_rect.0, best_rect.1));
     }
-
-    panic!("No solution found")
-    // best_area
+    best_area
 }
 
+#[cfg(feature = "draw-visuals")]
 fn draw_svg(input: &[Pos], transformed: &[Pos], rect: (Pos, Pos)) {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("day9.svg");
     let mut file = std::fs::File::create(&path).unwrap();
     write_svg(input, transformed, rect, &mut file).unwrap();
 }
 
+#[cfg(feature = "draw-visuals")]
 fn write_svg(
     input: &[Pos],
     transformed: &[Pos],
